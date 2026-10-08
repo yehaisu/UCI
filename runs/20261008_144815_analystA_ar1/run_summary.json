@@ -1,0 +1,15 @@
+{
+  "run_id": "20261008_144815_analystA_ar1",
+  "run_name": "analystA_ar1",
+  "start": "2026-10-08T14:48:15",
+  "param_model": "RidgeNumpy",
+  "param_train_period": "2011",
+  "param_test_period": "2012",
+  "param_features": "lag1",
+  "param_alpha": 0.1,
+  "metric_test_rmse": 1244.6282,
+  "metric_test_mae": 965.3918,
+  "metric_test_r2": 0.5145,
+  "metric_naive_rmse": 1248.0344,
+  "metric_pct_vs_naive": 0.2729
+}

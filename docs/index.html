@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital Bikeshare — Next-Day Rentals Forecast</title>
+<style>
+  :root{ --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --brand:#2f5597; --good:#1f7a4d; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);line-height:1.65;background:#fff}
+  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 80px}
+  header{border-bottom:3px solid var(--brand);padding-bottom:20px;margin-bottom:32px}
+  h1{font-size:30px;margin:0 0 6px;color:var(--brand)}
+  .sub{color:var(--muted);font-size:15px}
+  h2{font-size:21px;margin:40px 0 12px;border-left:4px solid var(--brand);padding-left:10px}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:center}
+  th{background:#f3f6fb}
+  td.l,th.l{text-align:left}
+  .good{color:var(--good);font-weight:600}
+  .bad{color:#b42318}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+  .card{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#fafbfd}
+  .card .n{font-size:24px;font-weight:700;color:var(--brand)}
+  .card .t{font-size:13px;color:var(--muted)}
+  img{width:100%;border:1px solid var(--line);border-radius:8px;margin:10px 0}
+  code{background:#f3f4f6;padding:1px 6px;border-radius:5px;font-size:13.5px}
+  pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow:auto;font-size:13px}
+  ul{margin:8px 0}
+  .note{background:#fff8e6;border:1px solid #f6e3a1;border-radius:8px;padding:10px 14px;font-size:14px}
+  footer{margin-top:56px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Capital Bikeshare — 次日租赁量预测</h1>
+    <div class="sub">NUS ISS Assignment · UCI Bike Sharing Dataset (2011–2012) · MLOps experiment tracking demo</div>
+  </header>
+
+  <h2>1. 问题</h2>
+  <p>运营团队需要在<b>每晚</b>估计<b>次日</b>总租赁量，用于排班与车辆调度。估计太低会对高峰日准备不足，太高则增加运营成本。因此只能使用<b>当晚可得的信息</b>预测明天，并与朴素基准对比：<code>明天 = 昨天</code>。</p>
+
+  <h2>2. 方法</h2>
+  <ul>
+    <li><b>时间切分</b>：2011 全年训练（358 天），2012 全年测试（366 天），不 shuffle，杜绝未来信息泄漏。</li>
+    <li><b>泄漏防护</b>：丢弃 <code>casual</code>、<code>registered</code>（二者之和即目标 <code>cnt</code>）。</li>
+    <li><b>合法特征</b>：<code>lag1</code>（昨天，昨晚已知）、<code>lag7</code>（上周同日）、<code>weathersit</code>（天气状况）。</li>
+    <li><b>两个分析师</b>：A = 纯自回归 AR(1)（仅 lag1）；B = 加入周滞后 + 天气状况。均为 Ridge 回归（纯 numpy 实现，含 drop-first 独热与 z-score 标准化）。</li>
+    <li><b>可追溯</b>：每次运行记录数据时段、特征、参数、指标到 <code>runs/runs.csv</code> 与独立 run 目录；最优模型注册为命名版本 <code>models/BikeShareForecaster_v1.pkl</code>。</li>
+  </ul>
+
+  <h2>3. 结果（2012 测试集）</h2>
+  <div class="grid">
+    <div class="card"><div class="n">1248.0</div><div class="t">朴素基准 RMSE（明天=昨天）</div></div>
+    <div class="card"><div class="n">1056.6</div><div class="t">最佳模型 RMSE（analystB_weather）</div></div>
+    <div class="card"><div class="n good">−15.3%</div><div class="t">相对朴素基准的误差下降</div></div>
+  </div>
+
+  <table>
+    <tr><th class="l">Run</th><th class="l">特征</th><th>RMSE</th><th>MAE</th><th>R²</th><th>vs 朴素</th></tr>
+    <tr><td class="l">naive（基准）</td><td class="l">—</td><td>1248.0</td><td>872.0</td><td>—</td><td>—</td></tr>
+    <tr><td class="l">analystA_ar1</td><td class="l">lag1</td><td>1244.6</td><td>965.4</td><td>0.514</td><td class="good">+0.3%</td></tr>
+    <tr><td class="l">analystB_weather ★</td><td class="l">lag1, lag7, weathersit</td><td>1056.6</td><td>802.8</td><td>0.650</td><td class="good">+15.3%</td></tr>
+  </table>
+  <p class="note">结论：分析师 A 仅与朴素基准打平（+0.3%，不足以采用）；<b>分析师 B 显著优于基准（−15.3%）</b>，被注册为命名版本 <code>BikeShareForecaster v1</code>，可供运营排班调用。</p>
+
+  <h2>4. 可视化</h2>
+  <img src="assets/rentals_over_time.png" alt="daily rentals over time">
+  <img src="assets/forecast_vs_actual.png" alt="2012 forecast vs actual">
+  <img src="assets/metrics_bar.png" alt="RMSE comparison">
+
+  <h2>5. 如何复现</h2>
+  <pre>pip install numpy pandas matplotlib
+python src/train.py</pre>
+  <p>产物：<code>runs/runs.csv</code>（每次运行的参数与指标）、<code>runs/&lt;run_id&gt;/</code>（独立归档）、<code>models/BikeShareForecaster_v1.pkl</code>（命名模型）。</p>
+
+  <h2>6. 发布为 GitHub Pages</h2>
+  <pre>git init
+git add .
+git commit -m "bikeshare forecast report"
+git branch -M main
+git remote add origin git@github.com:&lt;你的用户名&gt;/&lt;仓库名&gt;.git
+git push -u origin main</pre>
+  <p>然后在仓库 <b>Settings → Pages</b>，Source 选 <code>main</code> 分支、<code>/docs</code> 目录，保存后通过 <code>https://&lt;用户名&gt;.github.io/&lt;仓库名&gt;/</code> 访问本站。</p>
+
+  <footer>
+    Data: UCI Bike Sharing Dataset · Illustrative operational scenario · Built for NUS EBAC MLOps assignment.
+  </footer>
+</div>
+</body>
+</html>

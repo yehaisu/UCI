@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+data/bike_sharing.zip
+debug.py
+debug_out.txt
+run_log.txt
+.DS_Store

@@ -1,8 +1,10 @@
 {
-  "n_train": 358,
-  "n_test": 366,
   "naive_rmse": 1248.0,
   "naive_mae": 872.0,
+  "best": "analystB_weather",
+  "best_rmse": 1056.6,
+  "beats_benchmark": true,
+  "registered_version": 2,
   "runs": [
     {
       "name": "analystA_ar1",
@@ -18,7 +20,5 @@
       "r2": 0.65,
       "pct_vs_naive": 15.3
     }
-  ],
-  "best": "analystB_weather",
-  "beats_benchmark": true
+  ]
 }

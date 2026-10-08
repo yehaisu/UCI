@@ -1,0 +1,19 @@
+artifact_path: file:C:/Users/22136/Doubao/chats/2026-10-08/new-chat/mlruns/1/models/m-8a72399a27f1418695d8b16f25abc61f/artifacts
+flavors:
+  python_function:
+    cloudpickle_version: 3.1.2
+    code: null
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pyfunc.model
+    python_model: python_model.pkl
+    python_version: 3.14.7
+    streamable: false
+mlflow_version: 3.17.0
+model_id: m-8a72399a27f1418695d8b16f25abc61f
+model_size_bytes: 6577
+model_uuid: m-8a72399a27f1418695d8b16f25abc61f
+prompts: null
+run_id: e986f13ef44742709c7b3066fe6f8dee
+utc_time_created: '2026-10-08 07:26:43.392434'

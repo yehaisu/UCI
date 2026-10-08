@@ -47,10 +47,19 @@
     <li><b>泄漏防护</b>：丢弃 <code>casual</code>、<code>registered</code>（二者之和即目标 <code>cnt</code>）。</li>
     <li><b>合法特征</b>：<code>lag1</code>（昨天，昨晚已知）、<code>lag7</code>（上周同日）、<code>weathersit</code>（天气状况）。</li>
     <li><b>两个分析师</b>：A = 纯自回归 AR(1)（仅 lag1）；B = 加入周滞后 + 天气状况。均为 Ridge 回归（纯 numpy 实现，含 drop-first 独热与 z-score 标准化）。</li>
-    <li><b>可追溯</b>：每次运行记录数据时段、特征、参数、指标到 <code>runs/runs.csv</code> 与独立 run 目录；最优模型注册为命名版本 <code>models/BikeShareForecaster_v1.pkl</code>。</li>
+    <li><b>可追溯（MLflow）</b>：每次运行用 <code>mlflow.log_params / log_metrics / set_tag / log_input</code> 记录数据时段、特征、参数、指标与标签；最佳模型通过 <code>mlflow.register_model</code> 注册为命名版本 <code>BikeShareForecaster</code>（当前 v2）。</li>
   </ul>
 
-  <h2>3. 结果（2012 测试集）</h2>
+  <h2>3. MLflow 实验追踪与模型注册</h2>
+  <p>本地用 <code>sqlite:///mlflow.db</code> 作为 tracking store，实验名为 <code>CapitalBikeshare</code>。两次 run 的参数/指标/标签全部入库，最佳模型已注册到 Model Registry。查看方式：</p>
+  <pre>python src/train.py      # 跑实验并记录到 MLflow
+mlflow ui                # 打开 http://127.0.0.1:5000 浏览 runs 与注册模型</pre>
+  <ul>
+    <li><b>Runs</b>：analystA_ar1、analystB_weather，可对比各自的 RMSE / 特征 / 超参。</li>
+    <li><b>Model Registry</b>：<code>BikeShareForecaster</code> 已有 v1、v2 两个命名版本，可检索、可复现。</li>
+  </ul>
+
+  <h2>4. 结果（2012 测试集）</h2>
   <div class="grid">
     <div class="card"><div class="n">1248.0</div><div class="t">朴素基准 RMSE（明天=昨天）</div></div>
     <div class="card"><div class="n">1056.6</div><div class="t">最佳模型 RMSE（analystB_weather）</div></div>
@@ -65,17 +74,18 @@
   </table>
   <p class="note">结论：分析师 A 仅与朴素基准打平（+0.3%，不足以采用）；<b>分析师 B 显著优于基准（−15.3%）</b>，被注册为命名版本 <code>BikeShareForecaster v1</code>，可供运营排班调用。</p>
 
-  <h2>4. 可视化</h2>
+  <h2>5. 可视化</h2>
   <img src="assets/rentals_over_time.png" alt="daily rentals over time">
   <img src="assets/forecast_vs_actual.png" alt="2012 forecast vs actual">
   <img src="assets/metrics_bar.png" alt="RMSE comparison">
 
-  <h2>5. 如何复现</h2>
-  <pre>pip install numpy pandas matplotlib
-python src/train.py</pre>
-  <p>产物：<code>runs/runs.csv</code>（每次运行的参数与指标）、<code>runs/&lt;run_id&gt;/</code>（独立归档）、<code>models/BikeShareForecaster_v1.pkl</code>（命名模型）。</p>
+  <h2>6. 如何复现</h2>
+  <pre>pip install -r requirements.txt
+python src/train.py
+mlflow ui        # 浏览 http://127.0.0.1:5000</pre>
+  <p>产物：<code>mlflow.db</code> + <code>mlruns/</code>（每次 run 的参数/指标/模型制品）、注册模型 <code>BikeShareForecaster</code>。</p>
 
-  <h2>6. 发布为 GitHub Pages</h2>
+  <h2>7. 发布为 GitHub Pages</h2>
   <pre>git init
 git add .
 git commit -m "bikeshare forecast report"

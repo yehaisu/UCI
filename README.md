@@ -27,11 +27,10 @@ compare against the naive baseline (`tomorrow = yesterday`), and keep a
 
   * `analystB_weather` — Ridge on `lag1, lag7, weathersit`.
 
-* Run tracking mimics MLflow: each run logs data period / features / params /
+* Run tracking uses **real MLflow** (`log_params / log_metrics / set_tag /
+  log_input`), experiment `CapitalBikeshare`, store `mlflow.db`.
 
-  metrics to `runs/runs.csv` and an isolated `runs/<run_id>/` folder.
-
-* Best model is registered as `models/BikeShareForecaster_v1.pkl`.
+* Best model is registered in the Model Registry as `BikeShareForecaster` (v2).
 
 ## Result (2012 test)
 
@@ -50,6 +49,7 @@ compare against the naive baseline (`tomorrow = yesterday`), and keep a
 ```
 pip install -r requirements.txt
 python src/train.py
+mlflow ui        # http://127.0.0.1:5000
 ```
 
 ## Publish as GitHub Pages
@@ -72,9 +72,9 @@ Visit `https://<you>.github.io/<repo>/`.
 
 
 ```
-data/        day.csv (+ raw zip)
-src/train.py training + experiment tracking (pure numpy)
-runs/        runs.csv + per-run artifacts
-models/      registered BikeShareForecaster_v1.pkl
+data/        day.csv
+src/train.py training + MLflow experiment tracking
+mlflow.db    MLflow tracking store (SQLite)
+mlruns/      run artifacts + logged models
 docs/        index.html + assets/  -> GitHub Pages site
 ```

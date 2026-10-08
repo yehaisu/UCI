@@ -1,3 +1,0 @@
-run_id,run_name,start,param_model,param_train_period,param_test_period,param_features,param_alpha,metric_test_rmse,metric_test_mae,metric_test_r2,metric_naive_rmse,metric_pct_vs_naive
-20261008_144815_analystA_ar1,analystA_ar1,2026-10-08T14:48:15,RidgeNumpy,2011,2012,lag1,0.1,1244.6282,965.3918,0.5145,1248.0344,0.2729
-20261008_144815_analystB_weather,analystB_weather,2026-10-08T14:48:15,RidgeNumpy,2011,2012,"lag1,lag7,weathersit",0.1,1056.6274,802.7816,0.6501,1248.0344,15.3367

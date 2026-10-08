@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
 <style>
   :root{ --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --brand:#2f5597; --good:#1f7a4d; }
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);line-height:1.65;background:#fff}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);line-height:1.65;background:#fff}
   .wrap{max-width:960px;margin:0 auto;padding:48px 24px 80px}
   header{border-bottom:3px solid var(--brand);padding-bottom:20px;margin-bottom:32px}
   h1{font-size:30px;margin:0 0 6px;color:var(--brand)}
@@ -34,65 +34,65 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Capital Bikeshare — 次日租赁量预测</h1>
-    <div class="sub">NUS ISS Assignment · UCI Bike Sharing Dataset (2011–2012) · MLOps experiment tracking demo</div>
+    <h1>Capital Bikeshare — Next-Day Rentals Forecast</h1>
+    <div class="sub">NUS ISS Assignment · UCI Bike Sharing Dataset (2011–2012) · MLOps experiment tracking with MLflow</div>
   </header>
 
-  <h2>1. 问题</h2>
-  <p>运营团队需要在<b>每晚</b>估计<b>次日</b>总租赁量，用于排班与车辆调度。估计太低会对高峰日准备不足，太高则增加运营成本。因此只能使用<b>当晚可得的信息</b>预测明天，并与朴素基准对比：<code>明天 = 昨天</code>。</p>
+  <h2>1. Problem</h2>
+  <p>Every <b>evening</b> the operations team needs an estimate of <b>tomorrow's</b> total rentals to plan staffing and fleet capacity. An estimate that is too low leaves the team unprepared for a busy day; too high raises unnecessary operating costs. Only information available that evening may be used, and the model is compared against a simple naive rule: <code>tomorrow = yesterday</code>.</p>
 
-  <h2>2. 方法</h2>
+  <h2>2. Approach</h2>
   <ul>
-    <li><b>时间切分</b>：2011 全年训练（358 天），2012 全年测试（366 天），不 shuffle，杜绝未来信息泄漏。</li>
-    <li><b>泄漏防护</b>：丢弃 <code>casual</code>、<code>registered</code>（二者之和即目标 <code>cnt</code>）。</li>
-    <li><b>合法特征</b>：<code>lag1</code>（昨天，昨晚已知）、<code>lag7</code>（上周同日）、<code>weathersit</code>（天气状况）。</li>
-    <li><b>两个分析师</b>：A = 纯自回归 AR(1)（仅 lag1）；B = 加入周滞后 + 天气状况。均为 Ridge 回归（纯 numpy 实现，含 drop-first 独热与 z-score 标准化）。</li>
-    <li><b>可追溯（MLflow）</b>：每次运行用 <code>mlflow.log_params / log_metrics / set_tag / log_input</code> 记录数据时段、特征、参数、指标与标签；最佳模型通过 <code>mlflow.register_model</code> 注册为命名版本 <code>BikeShareForecaster</code>（当前 v2）。</li>
+    <li><b>Time-based split</b>: train on all of 2011 (358 days), test on all of 2012 (366 days); no shuffling, so no future information leaks into training.</li>
+    <li><b>Leakage guard</b>: drop <code>casual</code> and <code>registered</code> — their sum is exactly the target <code>cnt</code>.</li>
+    <li><b>Legitimate features</b>: <code>lag1</code> (yesterday's rentals, known that evening), <code>lag7</code> (same day last week), <code>weathersit</code> (weather situation).</li>
+    <li><b>Two analysts</b>: A = plain autoregressive AR(1) (lag1 only); B = adds the weekly lag and weather situation. Both are Ridge regressions (pure-numpy implementation with drop-first one-hot and z-score scaling).</li>
+    <li><b>Traceable (MLflow)</b>: every run logs data period, features, hyper-parameters, metrics and tags via <code>mlflow.log_params / log_metrics / set_tag / log_input</code>; the best model is registered as a named version <code>BikeShareForecaster</code> (currently v2) via <code>mlflow.register_model</code>.</li>
   </ul>
 
-  <h2>3. MLflow 实验追踪与模型注册</h2>
-  <p>本地用 <code>sqlite:///mlflow.db</code> 作为 tracking store，实验名为 <code>CapitalBikeshare</code>。两次 run 的参数/指标/标签全部入库，最佳模型已注册到 Model Registry。查看方式：</p>
-  <pre>python src/train.py      # 跑实验并记录到 MLflow
-mlflow ui                # 打开 http://127.0.0.1:5000 浏览 runs 与注册模型</pre>
+  <h2>3. MLflow Tracking &amp; Model Registry</h2>
+  <p>The local tracking store is <code>sqlite:///mlflow.db</code>, under experiment <code>CapitalBikeshare</code>. Parameters, metrics and tags for both runs are persisted, and the best model is registered in the Model Registry. To explore locally:</p>
+  <pre>python src/train.py      # run experiments and log to MLflow
+mlflow ui                # open http://127.0.0.1:5000 to browse runs & registered models</pre>
   <ul>
-    <li><b>Runs</b>：analystA_ar1、analystB_weather，可对比各自的 RMSE / 特征 / 超参。</li>
-    <li><b>Model Registry</b>：<code>BikeShareForecaster</code> 已有 v1、v2 两个命名版本，可检索、可复现。</li>
+    <li><b>Runs</b>: <code>analystA_ar1</code> and <code>analystB_weather</code> — compare RMSE, features and hyper-parameters side by side.</li>
+    <li><b>Model Registry</b>: <code>BikeShareForecaster</code> has named versions v1 and v2 — retrievable and reproducible.</li>
   </ul>
 
-  <h2>4. 结果（2012 测试集）</h2>
+  <h2>4. Results (2012 test set)</h2>
   <div class="grid">
-    <div class="card"><div class="n">1248.0</div><div class="t">朴素基准 RMSE（明天=昨天）</div></div>
-    <div class="card"><div class="n">1056.6</div><div class="t">最佳模型 RMSE（analystB_weather）</div></div>
-    <div class="card"><div class="n good">−15.3%</div><div class="t">相对朴素基准的误差下降</div></div>
+    <div class="card"><div class="n">1248.0</div><div class="t">Naive baseline RMSE (tomorrow = yesterday)</div></div>
+    <div class="card"><div class="n">1056.6</div><div class="t">Best-model RMSE (analystB_weather)</div></div>
+    <div class="card"><div class="n good">−15.3%</div><div class="t">Error reduction vs the naive baseline</div></div>
   </div>
 
   <table>
-    <tr><th class="l">Run</th><th class="l">特征</th><th>RMSE</th><th>MAE</th><th>R²</th><th>vs 朴素</th></tr>
-    <tr><td class="l">naive（基准）</td><td class="l">—</td><td>1248.0</td><td>872.0</td><td>—</td><td>—</td></tr>
+    <tr><th class="l">Run</th><th class="l">Features</th><th>RMSE</th><th>MAE</th><th>R²</th><th>vs naive</th></tr>
+    <tr><td class="l">naive (baseline)</td><td class="l">—</td><td>1248.0</td><td>872.0</td><td>—</td><td>—</td></tr>
     <tr><td class="l">analystA_ar1</td><td class="l">lag1</td><td>1244.6</td><td>965.4</td><td>0.514</td><td class="good">+0.3%</td></tr>
     <tr><td class="l">analystB_weather ★</td><td class="l">lag1, lag7, weathersit</td><td>1056.6</td><td>802.8</td><td>0.650</td><td class="good">+15.3%</td></tr>
   </table>
-  <p class="note">结论：分析师 A 仅与朴素基准打平（+0.3%，不足以采用）；<b>分析师 B 显著优于基准（−15.3%）</b>，被注册为命名版本 <code>BikeShareForecaster v1</code>，可供运营排班调用。</p>
+  <p class="note">Conclusion: Analyst A only ties the naive baseline (+0.3%, not worth adopting); <b>Analyst B clearly beats the baseline (−15.3%)</b> and is registered as <code>BikeShareForecaster v2</code> for operations planning.</p>
 
-  <h2>5. 可视化</h2>
+  <h2>5. Visualization</h2>
   <img src="assets/rentals_over_time.png" alt="daily rentals over time">
   <img src="assets/forecast_vs_actual.png" alt="2012 forecast vs actual">
   <img src="assets/metrics_bar.png" alt="RMSE comparison">
 
-  <h2>6. 如何复现</h2>
+  <h2>6. Reproduce</h2>
   <pre>pip install -r requirements.txt
 python src/train.py
-mlflow ui        # 浏览 http://127.0.0.1:5000</pre>
-  <p>产物：<code>mlflow.db</code> + <code>mlruns/</code>（每次 run 的参数/指标/模型制品）、注册模型 <code>BikeShareForecaster</code>。</p>
+mlflow ui        # browse http://127.0.0.1:5000</pre>
+  <p>Artifacts: <code>mlflow.db</code> + <code>mlruns/</code> (per-run parameters, metrics and model artifacts) and the registered model <code>BikeShareForecaster</code>.</p>
 
-  <h2>7. 发布为 GitHub Pages</h2>
+  <h2>7. Publish as GitHub Pages</h2>
   <pre>git init
 git add .
 git commit -m "bikeshare forecast report"
 git branch -M main
-git remote add origin git@github.com:&lt;你的用户名&gt;/&lt;仓库名&gt;.git
+git remote add origin git@github.com:&lt;username&gt;/&lt;repo&gt;.git
 git push -u origin main</pre>
-  <p>然后在仓库 <b>Settings → Pages</b>，Source 选 <code>main</code> 分支、<code>/docs</code> 目录，保存后通过 <code>https://&lt;用户名&gt;.github.io/&lt;仓库名&gt;/</code> 访问本站。</p>
+  <p>Then in the repo's <b>Settings → Pages</b>, set Source to the <code>main</code> branch and <code>/docs</code> folder. The site is live at <code>https://&lt;username&gt;.github.io/&lt;repo&gt;/</code>.</p>
 
   <footer>
     Data: UCI Bike Sharing Dataset · Illustrative operational scenario · Built for NUS EBAC MLOps assignment.
